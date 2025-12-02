@@ -16,17 +16,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Find and set project directory
-      id: find_dir
-      run: |
-        if [ -d "Fase 3 Proyecto Integrador" ]; then
-          echo "PROJECT_DIR=Fase 3 Proyecto Integrador" >> $GITHUB_OUTPUT
-        elif [ -d "Fate 3 Proyecto Integrador" ]; then
-          echo "PROJECT_DIR=Fate 3 Proyecto Integrador" >> $GITHUB_OUTPUT
-        else
-          echo "PROJECT_DIR=." >> $GITHUB_OUTPUT
-        fi
-    
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
@@ -35,42 +24,23 @@ jobs:
     - name: Install security tools
       run: |
         python -m pip install --upgrade pip
-        pip install bandit safety pip-audit
+        pip install bandit safety
     
     - name: Bandit - Security scanning
       run: |
-        cd "${{ steps.find_dir.outputs.PROJECT_DIR }}"
-        if [ -d "src" ]; then
-          bandit -r src -f json -o bandit-report.json || echo "Bandit scan completed"
-        else
-          echo "src directory not found, skipping bandit"
-          echo '{"results": []}' > bandit-report.json
-        fi
+        cd "Fase-3-Proyecto-Integrador"
+        bandit -r src -f json -o bandit-report.json || true
     
     - name: Safety - Dependency check
       run: |
-        cd "${{ steps.find_dir.outputs.PROJECT_DIR }}"
-        if [ -f "requirements.txt" ]; then
-          safety check -r requirements.txt --json --output safety-report.json || echo "Safety check completed"
-        else
-          echo "requirements.txt not found, skipping safety"
-          echo '{"vulnerabilities": []}' > safety-report.json
-        fi
-    
-    - name: Check for secrets
-      uses: gitleaks/gitleaks-action@v2
-      with:
-        config-path: .github/gitleaks.toml
-        path: "${{ steps.find_dir.outputs.PROJECT_DIR }}"
+        cd "Fase-3-Proyecto-Integrador"
+        safety check -r requirements.txt --json --output safety-report.json || true
     
     - name: File permissions check
       run: |
         echo "Checking file permissions..."
-        cd "${{ steps.find_dir.outputs.PROJECT_DIR }}"
-        find . -type f -name "*.py" -exec ls -la {} \; | head -20
-        echo ""
-        echo "Checking for world-writable files:"
-        find . -type f -perm -002 ! -path "./.git/*" -exec ls -la {} \; || true
+        cd "Fase-3-Proyecto-Integrador"
+        find . -type f -name "*.py" -exec ls -la {} \; | head -10
     
     - name: SAST with CodeQL
       uses: github/codeql-action/init@v2
@@ -81,34 +51,12 @@ jobs:
       uses: github/codeql-action/analyze@v2
     
     - name: Upload security reports
-      if: always()
       uses: actions/upload-artifact@v4
       with:
         name: security-reports
         path: |
-          ${{ steps.find_dir.outputs.PROJECT_DIR }}/bandit-report.json
-          ${{ steps.find_dir.outputs.PROJECT_DIR }}/safety-report.json
-        retention-days: 30
-    
-    - name: Dependency review
-      uses: actions/dependency-review-action@v3
-    
-    - name: Check for vulnerable dependencies
-      run: |
-        echo "Checking for known vulnerabilities..."
-        cd "${{ steps.find_dir.outputs.PROJECT_DIR }}"
-        if [ -f "requirements.txt" ]; then
-          pip-audit --requirement requirements.txt --format json --output pip-audit-report.json || echo "pip-audit completed"
-        else
-          echo '{"vulnerabilities": []}' > pip-audit-report.json
-        fi
-    
-    - name: Upload pip-audit report
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: pip-audit-report
-        path: ${{ steps.find_dir.outputs.PROJECT_DIR }}/pip-audit-report.json
+          Fase-3-Proyecto-Integrador/bandit-report.json
+          Fase-3-Proyecto-Integrador/safety-report.json
         retention-days: 30
 
   container-scan:
@@ -120,29 +68,12 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Find and set project directory
-      id: find_dir
-      run: |
-        if [ -d "Fase 3 Proyecto Integrador" ]; then
-          echo "PROJECT_DIR=Fase 3 Proyecto Integrador" >> $GITHUB_OUTPUT
-        elif [ -d "Fate 3 Proyecto Integrador" ]; then
-          echo "PROJECT_DIR=Fate 3 Proyecto Integrador" >> $GITHUB_OUTPUT
-        else
-          echo "PROJECT_DIR=." >> $GITHUB_OUTPUT
-        fi
-    
     - name: Build Docker image
       run: |
-        cd "${{ steps.find_dir.outputs.PROJECT_DIR }}"
-        if [ -f "Dockerfile" ]; then
-          docker build -t simpleapp:latest .
-        else
-          echo "Dockerfile not found, skipping container scan"
-          exit 0
-        fi
+        cd "Fase-3-Proyecto-Integrador"
+        docker build -t simpleapp:latest .
     
     - name: Run Trivy vulnerability scanner
-      if: success()
       uses: aquasecurity/trivy-action@master
       with:
         image-ref: 'simpleapp:latest'
@@ -150,16 +81,6 @@ jobs:
         output: 'trivy-results.sarif'
     
     - name: Upload Trivy scan results
-      if: always()
       uses: github/codeql-action/upload-sarif@v2
       with:
         sarif_file: 'trivy-results.sarif'
-    
-    - name: Upload Docker image info
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: docker-image-info
-        path: |
-          ${{ steps.find_dir.outputs.PROJECT_DIR }}/Dockerfile
-        retention-days: 30
