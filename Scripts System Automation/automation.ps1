@@ -1,4 +1,4 @@
-# SCRIPT DE AUTOMATIZACIÓN WINDOWS
+# SCRIPT DE AUTOMATIZACIÓN WINDOWS P
 # ============================================
 
 # Configuración
