@@ -1,10 +1,8 @@
-name: System Automation Workflow
+name: System Automation Workflow - Fixed
 
 on:
-  workflow_dispatch:  # Ejecución manual
+  workflow_dispatch:
   push:
-    branches: [ main, master ]
-  pull_request:
     branches: [ main, master ]
 
 env:
@@ -16,78 +14,79 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout código
+    - name: Checkout repository
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
     
-    - name: Listar archivos (para debugging)
-      run: |
-        echo "Contenido del repositorio:"
-        ls -la
-        echo "Contenido de scripts/:"
-        ls -la scripts/ || echo "Directorio scripts/ no existe"
-    
-    - name: Configurar variables de entorno
+    - name: Set up environment variables
       run: |
         echo "JOB_ID=${{ github.run_id }}" >> $GITHUB_ENV
         echo "RUNNER_OS=${{ runner.os }}" >> $GITHUB_ENV
         echo "TIMESTAMP=$(date +%Y%m%d_%H%M%S)" >> $GITHUB_ENV
-        echo "OUTPUT_DIR=automation-output" >> $GITHUB_ENV
-        echo "LOG_FILE=automation.log" >> $GITHUB_ENV
     
-    - name: Crear script si no existe (backup)
+    - name: Run Linux automation
+      env:
+        API_TOKEN: ${{ secrets.API_TOKEN || 'test-token-123' }}
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD || 'test-pass-456' }}
       run: |
-        if [ ! -f "scripts/automation.sh" ]; then
-          echo "Creando scripts/automation.sh automáticamente..."
-          mkdir -p scripts
-          cat > scripts/automation.sh << 'EOF'
-        #!/bin/bash
-        
-        echo "=== Script de Automatización Linux ==="
-        echo "Fecha: $(date)"
-        echo "Directorio actual: $(pwd)"
-        echo "Variables de entorno:"
-        echo "JOB_ID: $JOB_ID"
-        echo "RUNNER_OS: $RUNNER_OS"
-        echo "TIMESTAMP: $TIMESTAMP"
-        
         # Crear directorio de salida
         mkdir -p "$OUTPUT_DIR"
         
-        # Crear archivo de ejemplo
-        echo "Este es un archivo de prueba" > "$OUTPUT_DIR/test.txt"
-        echo "Contenido del directorio $OUTPUT_DIR:" > "$OUTPUT_DIR/list.txt"
-        ls -la >> "$OUTPUT_DIR/list.txt"
+        # 1. Leer/escribir archivos
+        echo "=== Linux Automation ===" > "$OUTPUT_DIR/linux_results.txt"
+        echo "Timestamp: $(date)" >> "$OUTPUT_DIR/linux_results.txt"
+        echo "Job ID: $JOB_ID" >> "$OUTPUT_DIR/linux_results.txt"
         
-        echo "Script completado exitosamente"
+        # Listar archivos del repositorio
+        echo "" >> "$OUTPUT_DIR/linux_results.txt"
+        echo "Repository contents:" >> "$OUTPUT_DIR/linux_results.txt"
+        ls -la >> "$OUTPUT_DIR/linux_results.txt"
+        
+        # 2. Gestionar permisos
+        echo "Creating files with different permissions..." >> "$OUTPUT_DIR/linux_results.txt"
+        echo "Readable file" > "$OUTPUT_DIR/readable.txt"
+        chmod 644 "$OUTPUT_DIR/readable.txt"
+        
+        echo "Executable script" > "$OUTPUT_DIR/script.sh"
+        chmod +x "$OUTPUT_DIR/script.sh"
+        
+        # 3. Proceso en segundo plano
+        echo "Starting background process..." >> "$OUTPUT_DIR/linux_results.txt"
+        (sleep 3; echo "Background process completed at $(date)" > "$OUTPUT_DIR/background_done.txt") &
+        BG_PID=$!
+        echo "Background process PID: $BG_PID" >> "$OUTPUT_DIR/linux_results.txt"
+        
+        # 4. Usar variables de entorno
+        echo "" >> "$OUTPUT_DIR/linux_results.txt"
+        echo "Environment variables:" >> "$OUTPUT_DIR/linux_results.txt"
+        echo "API_TOKEN length: ${#API_TOKEN}" >> "$OUTPUT_DIR/linux_results.txt"
+        echo "DB_PASSWORD length: ${#DB_PASSWORD}" >> "$OUTPUT_DIR/linux_results.txt"
+        echo "RUNNER_OS: $RUNNER_OS" >> "$OUTPUT_DIR/linux_results.txt"
+        
+        # 5. Generar JSON result
+        cat > "$OUTPUT_DIR/summary.json" << EOF
+        {
+          "status": "success",
+          "platform": "linux",
+          "timestamp": "$(date -Iseconds)",
+          "job_id": "$JOB_ID",
+          "files_created": ["linux_results.txt", "readable.txt", "script.sh", "summary.json"],
+          "background_process_pid": $BG_PID
+        }
         EOF
-        fi
-    
-    - name: Hacer ejecutable el script
-      run: |
-        chmod +x scripts/automation.sh || echo "No se pudo hacer ejecutable"
-        ls -la scripts/ || true
-    
-    - name: Ejecutar script de automatización (Linux)
-      env:
-        API_TOKEN: ${{ secrets.API_TOKEN || 'test-token-12345' }}
-        DB_PASSWORD: ${{ secrets.DB_PASSWORD || 'test-pass-67890' }}
-      run: |
-        echo "Ejecutando script de automatización..."
-        ./scripts/automation.sh 2>&1 | tee automation.log
         
-        # Crear archivo de resultados si el script falló
-        if [ ! -d "automation-output" ]; then
-          mkdir -p automation-output
-          echo "Script ejecutado pero no creó output" > automation-output/fallback.txt
-        fi
+        # Esperar proceso background
+        wait $BG_PID
+        
+        echo "✅ Linux automation completed successfully"
+        
+        # Crear log
+        echo "Workflow log - Linux" > "$LOG_FILE"
+        echo "Completed at: $(date)" >> "$LOG_FILE"
     
-    - name: Subir artifacts
+    - name: Upload Linux artifacts
       uses: actions/upload-artifact@v4
-      if: always()
       with:
-        name: linux-output-${{ env.TIMESTAMP }}
+        name: linux-automation-results
         path: |
           automation-output/
           automation.log
@@ -97,92 +96,131 @@ jobs:
     runs-on: windows-latest
     
     steps:
-    - name: Checkout código
+    - name: Checkout repository
       uses: actions/checkout@v4
     
-    - name: Listar archivos
-      run: |
-        echo "Contenido del repositorio:"
-        dir
-        echo "Contenido de scripts/:"
-        dir scripts 2>nul || echo "Directorio scripts no existe"
-    
-    - name: Configurar variables
+    - name: Set up environment variables
       run: |
         echo "JOB_ID=${{ github.run_id }}" | Out-File -FilePath $env:GITHUB_ENV -Append
         echo "RUNNER_OS=${{ runner.os }}" | Out-File -FilePath $env:GITHUB_ENV -Append
         echo "TIMESTAMP=$(Get-Date -Format 'yyyyMMdd_HHmmss')" | Out-File -FilePath $env:GITHUB_ENV -Append
     
-    - name: Crear script PowerShell si no existe
-      run: |
-        if (!(Test-Path "scripts\automation.ps1")) {
-          echo "Creando scripts\automation.ps1 automáticamente..."
-          New-Item -ItemType Directory -Path "scripts" -Force | Out-Null
-          @'
-        # Script de Automatización Windows
-        
-        Write-Host "=== Script de Automatización Windows ==="
-        Write-Host "Fecha: $(Get-Date)"
-        Write-Host "Directorio actual: $(Get-Location)"
-        Write-Host "Variables de entorno:"
-        Write-Host "JOB_ID: $env:JOB_ID"
-        Write-Host "RUNNER_OS: $env:RUNNER_OS"
-        Write-Host "TIMESTAMP: $env:TIMESTAMP"
-        
-        # Crear directorio de salida
-        New-Item -ItemType Directory -Path "automation-output" -Force | Out-Null
-        
-        # Crear archivo de ejemplo
-        "Este es un archivo de prueba en Windows" | Out-File -FilePath "automation-output\test.txt"
-        "Contenido del directorio:" | Out-File -FilePath "automation-output\list.txt"
-        dir | Out-File -FilePath "automation-output\list.txt" -Append
-        
-        Write-Host "Script completado exitosamente"
-        '@ | Out-File -FilePath "scripts\automation.ps1" -Encoding UTF8
-        }
-    
-    - name: Ejecutar script PowerShell
+    - name: Run Windows automation
       env:
-        API_TOKEN: ${{ secrets.API_TOKEN || 'test-token-12345' }}
-        DB_PASSWORD: ${{ secrets.DB_PASSWORD || 'test-pass-67890' }}
+        API_TOKEN: ${{ secrets.API_TOKEN || 'test-token-123' }}
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD || 'test-pass-456' }}
       run: |
-        echo "Ejecutando script PowerShell..."
-        powershell -ExecutionPolicy Bypass -File scripts\automation.ps1 2>&1 | Tee-Object -FilePath automation.log
-        
-        # Crear output si no existe
-        if (!(Test-Path "automation-output")) {
-          New-Item -ItemType Directory -Path "automation-output" -Force | Out-Null
-          "Script ejecutado" | Out-File -FilePath "automation-output\fallback.txt"
+        # Crear directorio de salida
+        if (!(Test-Path "$env:OUTPUT_DIR")) {
+            New-Item -ItemType Directory -Path "$env:OUTPUT_DIR" -Force | Out-Null
         }
+        
+        # Crear y ejecutar script PowerShell CORRECTO
+        $scriptContent = @'
+        # Windows Automation Script - CORRECT SYNTAX
+        
+        Write-Host "=== Windows Automation ==="
+        
+        # 1. Leer/escribir archivos
+        $output = @"
+        === Windows Automation ===
+        Timestamp: $(Get-Date)
+        Job ID: $env:JOB_ID
+        
+        Repository contents:
+        "@
+        
+        # Get repository contents
+        $files = Get-ChildItem -Path . -Recurse -Depth 1 | Select-Object Name, Length, LastWriteTime
+        $output += "`r`n" + ($files | Format-Table -AutoSize | Out-String)
+        
+        $output | Out-File -FilePath "$env:OUTPUT_DIR\windows_results.txt" -Encoding UTF8
+        
+        # 2. Gestionar permisos (simulado en Windows)
+        "Test file content" | Out-File -FilePath "$env:OUTPUT_DIR\test_file.txt" -Encoding UTF8
+        Write-Host "Created test file"
+        
+        # 3. Proceso en segundo plano usando Start-Job
+        Write-Host "Starting background job..."
+        $job = Start-Job -ScriptBlock {
+            Start-Sleep -Seconds 3
+            "Background job completed at $(Get-Date)" | Out-File -FilePath "$using:env:OUTPUT_DIR\background_done.txt" -Encoding UTF8
+        }
+        Write-Host "Background job ID: $($job.Id)"
+        
+        # 4. Usar variables de entorno
+        $envInfo = @"
+        
+        Environment variables:
+        API_TOKEN length: $($env:API_TOKEN.Length)
+        DB_PASSWORD length: $($env:DB_PASSWORD.Length)
+        RUNNER_OS: $env:RUNNER_OS
+        Computer: $env:COMPUTERNAME
+        User: $env:USERNAME
+        "@
+        
+        $envInfo | Out-File -FilePath "$env:OUTPUT_DIR\windows_results.txt" -Append -Encoding UTF8
+        
+        # 5. Generar JSON result
+        $jsonContent = @"
+        {
+          "status": "success",
+          "platform": "windows",
+          "timestamp": "$(Get-Date -Format 'yyyy-MM-ddTHH:mm:ss')",
+          "job_id": "$env:JOB_ID",
+          "files_created": ["windows_results.txt", "test_file.txt", "summary.json"],
+          "background_job_id": $($job.Id)
+        }
+        "@
+        
+        $jsonContent | Out-File -FilePath "$env:OUTPUT_DIR\summary.json" -Encoding UTF8
+        
+        # Esperar trabajo background
+        $job | Wait-Job | Out-Null
+        $job | Remove-Job -Force
+        
+        Write-Host "✅ Windows automation completed successfully"
+        '@
+        
+        # Guardar y ejecutar script
+        $scriptContent | Out-File -FilePath "automation.ps1" -Encoding UTF8
+        powershell -ExecutionPolicy Bypass -File "automation.ps1"
+        
+        # Crear log
+        "Workflow log - Windows" | Out-File -FilePath "$env:LOG_FILE" -Encoding UTF8
+        "Completed at: $(Get-Date)" | Out-File -FilePath "$env:LOG_FILE" -Append -Encoding UTF8
     
-    - name: Subir artifacts Windows
+    - name: Upload Windows artifacts
       uses: actions/upload-artifact@v4
-      if: always()
       with:
-        name: windows-output-${{ env.TIMESTAMP }}
+        name: windows-automation-results
         path: |
           automation-output/
           automation.log
         retention-days: 7
 
-  notify:
-    needs: [linux-automation, windows-automation]
+  summary:
     runs-on: ubuntu-latest
-    if: always()
+    needs: [linux-automation, windows-automation]
     
     steps:
-    - name: Notificar resultado
+    - name: Display workflow results
       run: |
-        echo "=== Resumen del Workflow ==="
-        echo "Fecha: $(date)"
+        echo "=== WORKFLOW SUMMARY ==="
         echo "Workflow: ${{ github.workflow }}"
         echo "Run ID: ${{ github.run_id }}"
-        echo "Linux job: ${{ needs.linux-automation.result }}"
-        echo "Windows job: ${{ needs.windows-automation.result }}"
+        echo "Run URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        echo ""
+        echo "JOB RESULTS:"
+        echo "- Linux: ${{ needs.linux-automation.result }}"
+        echo "- Windows: ${{ needs.windows-automation.result }}"
+        echo ""
         
-        if [[ "${{ needs.linux-automation.result }}" == "success" && "${{ needs.windows-automation.result }}" == "success" ]]; then
-          echo "✅ Todos los jobs completados exitosamente"
+        if [[ "${{ needs.linux-automation.result }}" == "success" ]] && [[ "${{ needs.windows-automation.result }}" == "success" ]]; then
+          echo "🎉 ALL JOBS COMPLETED SUCCESSFULLY!"
+          echo "Artifacts are available for download."
         else
-          echo "⚠️  Algunos jobs tuvieron problemas"
-          echo "Revisa los logs para más detalles"
+          echo "⚠️  Some jobs had issues"
+          echo "Check the logs for details"
+        fi
         fi
