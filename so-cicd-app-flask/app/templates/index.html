@@ -1,1 +1,89 @@
-
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplicación SO CI/CD Flask</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .endpoints {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        code {
+            background: #e8e8e8;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        .btn {
+            display: inline-block;
+            background: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 5px;
+            transition: background 0.3s;
+        }
+        .btn:hover {
+            background: #45a049;
+        }
+        .btn-info {
+            background: #2196F3;
+        }
+        .btn-info:hover {
+            background: #0b7dda;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Aplicación SO CI/CD con Flask</h1>
+        <p>Esta es una aplicación de ejemplo para demostrar CI/CD con Flask y Render.</p>
+        
+        <h2>📊 Información de la Aplicación</h2>
+        <ul>
+            <li><strong>Framework:</strong> Flask (Python)</li>
+            <li><strong>Entorno:</strong> <code>{{ env }}</code></li>
+            <li><strong>Versión:</strong> <code>{{ version }}</code></li>
+        </ul>
+        
+        <div class="endpoints">
+            <h3>🔗 Endpoints Disponibles:</h3>
+            <ul>
+                <li><code>GET /</code> - Esta página</li>
+                <li><code>GET /info</code> - Información del sistema y variables de entorno</li>
+                <li><code>GET /health</code> - Verificación de salud del servicio</li>
+            </ul>
+        </div>
+        
+        <h3>🔍 Prueba los Endpoints:</h3>
+        <a href="/info" class="btn btn-info">Ver Información del Sistema</a>
+        <a href="/health" class="btn">Verificar Salud</a>
+        
+        <h3>🧪 Tests Unitarios:</h3>
+        <p>Para ejecutar los tests localmente:</p>
+        <code>pytest tests/</code>
+    </div>
+</body>
+</html>
