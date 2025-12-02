@@ -1,52 +1,232 @@
-name: Multi-OS Test
+name: Multi-OS System Tests
 
 on:
-  workflow_dispatch:  # Esto habilita el botón de ejecución manual
+  workflow_dispatch:
+    inputs:
+      test-mode:
+        description: 'Modo de prueba'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - quick
+          - full
+          - debug
   push:
     branches: [ main, master ]
 
 jobs:
-  test-ubuntu:
+  ubuntu-test:
     runs-on: ubuntu-latest
+    name: Ubuntu Linux Tests
     
     steps:
-    - name: Checkout code
+    - name: Checkout repository
       uses: actions/checkout@v4
     
-    - name: Print info
+    - name: Mostrar información de ejecución
+      if: ${{ github.event_name == 'workflow_dispatch' }}
       run: |
-        echo "🚀 Workflow ejecutado manualmente!"
+        echo "🚀 EJECUCIÓN MANUAL - UBUNTU"
+        echo "=============================="
         echo "Usuario: ${{ github.actor }}"
-        echo "OS: Ubuntu"
-        echo "Fecha: $(date)"
-        
-  test-windows:
+        echo "Modo: ${{ github.event.inputs.test-mode }}"
+        echo "Hora: $(date)"
+        echo ""
+    
+    - name: Información del sistema Ubuntu
+      run: |
+        echo "🖥️  INFORMACIÓN DEL SISTEMA UBUNTU"
+        echo "====================================="
+        echo "Versión del SO:"
+        lsb_release -a
+        echo ""
+        echo "Arquitectura: $(uname -m)"
+        echo "Kernel: $(uname -r)"
+        echo ""
+        echo "Variables de entorno importantes:"
+        echo "HOME: $HOME"
+        echo "USER: $USER"
+        echo "PATH: $PATH" | tr ':' '\n' | head -5
+        echo ""
+    
+    - name: Comandos específicos Linux
+      run: |
+        echo "💻 COMANDOS ESPECÍFICOS LINUX"
+        echo "=============================="
+        echo "1. Espacio en disco:"
+        df -h
+        echo ""
+        echo "2. Memoria disponible:"
+        free -h
+        echo ""
+        echo "3. Procesos activos (top 3):"
+        ps aux --sort=-%cpu | head -4
+        echo ""
+        echo "4. Paquetes instalados (ejemplo):"
+        dpkg -l | grep -E "git|curl|wget" | head -5
+    
+    - name: Verificar herramientas comunes
+      run: |
+        echo "🔧 HERRAMIENTAS DISPONIBLES"
+        echo "============================"
+        echo "Git: $(git --version 2>/dev/null || echo 'No instalado')"
+        echo "Bash: $BASH_VERSION"
+        echo "Python: $(python3 --version 2>/dev/null || echo 'No instalado')"
+        echo "Node: $(node --version 2>/dev/null || echo 'No instalado')"
+        echo "Docker: $(docker --version 2>/dev/null || echo 'No instalado')"
+
+  windows-test:
     runs-on: windows-latest
-    needs: test-ubuntu
+    name: Windows Tests
     
     steps:
-    - name: Checkout code
+    - name: Checkout repository
       uses: actions/checkout@v4
     
-    - name: Print info
+    - name: Mostrar información de ejecución
+      if: ${{ github.event_name == 'workflow_dispatch' }}
       run: |
-        echo "🚀 Workflow ejecutado manualmente!"
-        echo "Usuario: ${{ github.actor }}"
-        echo "OS: Windows"
-        Write-Output "Fecha: $(Get-Date)"
-      shell: pwsh
-        
-  test-macos:
+        Write-Host "🚀 EJECUCIÓN MANUAL - WINDOWS" -ForegroundColor Green
+        Write-Host "==============================" -ForegroundColor Green
+        Write-Host "Usuario: ${{ github.actor }}"
+        Write-Host "Modo: ${{ github.event.inputs.test-mode }}"
+        Write-Host "Hora: $(Get-Date -Format 'HH:mm:ss')"
+        Write-Host ""
+    
+    - name: Información del sistema Windows
+      run: |
+        Write-Host "🖥️  INFORMACIÓN DEL SISTEMA WINDOWS" -ForegroundColor Cyan
+        Write-Host "======================================" -ForegroundColor Cyan
+        Write-Host "Información del sistema:"
+        systeminfo | Select-String -Pattern "OS Name","OS Version","System Type","System Boot Time" -CaseSensitive:$false
+        Write-Host ""
+        Write-Host "Arquitectura:"
+        if ([Environment]::Is64BitOperatingSystem) { "x64" } else { "x86" }
+        Write-Host ""
+        Write-Host "Variables de entorno importantes:"
+        Write-Host "USERNAME: $env:USERNAME"
+        Write-Host "COMPUTERNAME: $env:COMPUTERNAME"
+        Write-Host "PATH (primeras 3 rutas):"
+        $env:PATH -split ';' | Select-Object -First 3
+        Write-Host ""
+    
+    - name: Comandos específicos Windows PowerShell
+      run: |
+        Write-Host "💻 COMANDOS ESPECÍFICOS WINDOWS" -ForegroundColor Yellow
+        Write-Host "=================================" -ForegroundColor Yellow
+        Write-Host "1. Espacio en disco:"
+        Get-PSDrive C | Format-List Used,Free,Size
+        Write-Host ""
+        Write-Host "2. Información de procesos (top 3):"
+        Get-Process | Sort-Object CPU -Descending | Select-Object -First 3 ProcessName,CPU,WorkingSet
+        Write-Host ""
+        Write-Host "3. Servicios en ejecución (ejemplos):"
+        Get-Service | Where-Object {$_.Status -eq 'Running'} | Select-Object -First 3 DisplayName,Status
+        Write-Host ""
+        Write-Host "4. Información de red:"
+        Get-NetIPConfiguration | Select-Object InterfaceAlias,IPv4Address
+    
+    - name: Verificar herramientas comunes Windows
+      run: |
+        Write-Host "🔧 HERRAMIENTAS DISPONIBLES" -ForegroundColor Magenta
+        Write-Host "============================" -ForegroundColor Magenta
+        Write-Host "PowerShell versión: $($PSVersionTable.PSVersion)"
+        Write-Host "Git: $(git --version 2>$null)"
+        Write-Host "Python: $(python --version 2>$null)"
+        if (Get-Command node -ErrorAction SilentlyContinue) {
+          Write-Host "Node: $(node --version)"
+        } else {
+          Write-Host "Node: No instalado"
+        }
+
+  macos-test:
     runs-on: macos-latest
-    needs: test-ubuntu
+    name: macOS Tests
     
     steps:
-    - name: Checkout code
+    - name: Checkout repository
       uses: actions/checkout@v4
     
-    - name: Print info
+    - name: Mostrar información de ejecución
+      if: ${{ github.event_name == 'workflow_dispatch' }}
       run: |
-        echo "🚀 Workflow ejecutado manualmente!"
+        echo "🚀 EJECUCIÓN MANUAL - macOS"
+        echo "=============================="
         echo "Usuario: ${{ github.actor }}"
-        echo "OS: macOS"
-        echo "Fecha: $(date)"
+        echo "Modo: ${{ github.event.inputs.test-mode }}"
+        echo "Hora: $(date)"
+        echo ""
+    
+    - name: Información del sistema macOS
+      run: |
+        echo "🖥️  INFORMACIÓN DEL SISTEMA macOS"
+        echo "===================================="
+        echo "Versión del sistema:"
+        sw_vers
+        echo ""
+        echo "Arquitectura: $(uname -m)"
+        echo "Nombre del host: $(hostname)"
+        echo ""
+        echo "Información del hardware:"
+        system_profiler SPHardwareDataType | grep -E "Model Name|Chip|Memory|Serial Number" | head -5
+        echo ""
+        echo "Variables de entorno importantes:"
+        echo "HOME: $HOME"
+        echo "USER: $USER"
+        echo "SHELL: $SHELL"
+    
+    - name: Comandos específicos macOS
+      run: |
+        echo "💻 COMANDOS ESPECÍFICOS macOS"
+        echo "================================"
+        echo "1. Espacio en disco:"
+        df -h
+        echo ""
+        echo "2. Memoria disponible:"
+        top -l 1 -s 0 | grep PhysMem
+        echo ""
+        echo "3. Procesos activos (top 3):"
+        ps aux | sort -nrk 3,3 | head -4
+        echo ""
+        echo "4. Información de red:"
+        networksetup -listallhardwareports | head -10
+    
+    - name: Verificar herramientas comunes macOS
+      run: |
+        echo "🔧 HERRAMIENTAS DISPONIBLES"
+        echo "============================"
+        echo "Git: $(git --version 2>/dev/null || echo 'No instalado')"
+        echo "Bash: $BASH_VERSION"
+        echo "Zsh: $(zsh --version 2>/dev/null || echo 'No instalado')"
+        echo "Python3: $(python3 --version 2>/dev/null || echo 'No instalado')"
+        echo "Homebrew: $(brew --version 2>/dev/null | head -1 || echo 'No instalado')"
+        echo "Xcode Command Line Tools:"
+        xcode-select -p 2>/dev/null && echo "Instalado" || echo "No instalado"
+
+  resultados:
+    runs-on: ubuntu-latest
+    name: 📊 Resumen de Resultados
+    needs: [ubuntu-test, windows-test, macos-test]
+    
+    steps:
+    - name: Generar resumen
+      run: |
+        echo "=========================================="
+        echo "         📋 RESUMEN DE EJECUCIÓN"
+        echo "=========================================="
+        echo ""
+        echo "✅ Todas las pruebas se completaron exitosamente"
+        echo ""
+        echo "Sistemas probados:"
+        echo "  • ✅ Ubuntu Linux (ubuntu-latest)"
+        echo "  • ✅ Windows Server (windows-latest)"
+        echo "  • ✅ macOS (macos-latest)"
+        echo ""
+        echo "Modo de ejecución: ${{ github.event_name }}"
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        echo "Modo de prueba: ${{ github.event.inputs.test-mode }}"
+        endif
+        echo ""
+        echo "Hora de finalización: $(date)"
+        echo "=========================================="
