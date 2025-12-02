@@ -1,150 +1,52 @@
-name: Docker Container Action Workflow
+name: Docker Container Workflow Rápido
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:  
+  workflow_dispatch:
 
 jobs:
-  build-and-run-docker:
+  docker-test:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout del código
+    - name: Checkout
       uses: actions/checkout@v4
       
-    - name: Crear Dockerfile básico
+    - name: Crear Dockerfile
       run: |
         cat > Dockerfile << 'EOF'
-        # Dockerfile básico
-        FROM alpine:3.18
+        FROM busybox:latest
         
-        # Instalar herramientas básicas
-        RUN apk add --no-cache curl netcat-openbsd python3 py3-psutil htop
-        
-        # Crear aplicación simple
+        # Crear aplicación simple sin instalar nada
         RUN echo '#!/bin/sh' > /app/start.sh && \
-            echo 'echo "Contenedor iniciado!"' >> /app/start.sh && \
-            echo 'echo "Mi hostname es: $(hostname)"' >> /app/start.sh && \
-            echo 'echo "Mi IP es: $(hostname -i)"' >> /app/start.sh && \
-            echo 'echo "Servidor web escuchando en puerto 8080..."' >> /app/start.sh && \
-            echo 'while true; do echo -e "HTTP/1.1 200 OK\n\n<h1>Hello from Container!</h1><p>Time: $(date)</p>" | nc -l -p 8080 -q 1; done' >> /app/start.sh && \
+            echo 'echo "Server starting on port 8080..."' >> /app/start.sh && \
+            echo 'while true; do' >> /app/start.sh && \
+            echo '  echo -e "HTTP/1.1 200 OK\\n\\nOK from container at $(date)" | nc -l -p 8080' >> /app/start.sh && \
+            echo 'done' >> /app/start.sh && \
             chmod +x /app/start.sh
-        
-        # Crear script de monitoreo
-        RUN echo '#!/bin/sh' > /app/monitor.sh && \
-            echo 'echo "=== Monitoreo de Recursos ==="' >> /app/monitor.sh && \
-            echo 'echo "Fecha: $(date)"' >> /app/monitor.sh && \
-            echo 'echo "CPU Usage: $(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '"'"'{print 100 - $1}'"'"'%)"' >> /app/monitor.sh && \
-            echo 'echo "Memory Usage: $(free -m | awk '"'"'/Mem:/ {printf "%.2f%%", $3/$2*100}'"'"')"' >> /app/monitor.sh && \
-            echo 'echo "Disk Usage: $(df -h / | awk '"'"'NR==2 {print $5}'"'"')"' >> /app/monitor.sh && \
-            chmod +x /app/monitor.sh
         
         WORKDIR /app
         EXPOSE 8080
         CMD ["./start.sh"]
         EOF
         
-        cat > test-connection.py << 'EOF'
-        #!/usr/bin/env python3
-        import socket
-        import time
-        import sys
-        
-        def test_connection(host='localhost', port=8080, retries=5, delay=2):
-            for i in range(retries):
-                try:
-                    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                        s.settimeout(5)
-                        s.connect((host, port))
-                        s.sendall(b"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n")
-                        response = s.recv(1024).decode('utf-8')
-                        print(f"Conexión exitosa al contenedor en {host}:{port}")
-                        print(f"Respuesta recibida:\n{response[:200]}...")
-                        return True
-                except Exception as e:
-                    print(f"Intento {i+1}/{retries} fallido: {e}")
-                    if i < retries - 1:
-                        time.sleep(delay)
-            return False
-        
-        if __name__ == "__main__":
-            test_connection()
-        EOF
-        
-    - name: Construir imagen Docker
+    - name: Construir y ejecutar
       run: |
-        echo "Construyendo imagen Docker..."
-        docker build -t simple-app:latest .
-        echo "Imágenes disponibles:"
-        docker images
+        # Construir
+        docker build -t test-app .
         
-    - name: Ejecutar contenedor
-      run: |
-        echo "Iniciando contenedor..."
-        docker run -d --name my-container -p 8080:8080 simple-app:latest
+        # Ejecutar
+        docker run -d --name test -p 8080:8080 test-app
+        sleep 2
         
-        echo "Contenedores en ejecución:"
-        docker ps
+        # Probar comunicación
+        echo "Probando conexión..."
+        timeout 5s bash -c 'until curl -s http://localhost:8080; do sleep 1; done' || true
         
-        echo "Esperando a que el contenedor esté listo..."
-        sleep 5
+        # Monitorear
+        echo "Estadísticas:"
+        docker stats test --no-stream
         
-        echo "Logs del contenedor:"
-        docker logs my-container --tail 20
-        
-    - name: Demostrar comunicación con el host
-      run: |
-        echo "=== DEMOSTRACIÓN DE COMUNICACIÓN ==="
-        
-        echo "1. Probando conexión desde el host al contenedor..."
-        python3 test-connection.py
-        
-        echo ""
-        echo "2. Accediendo directamente al servicio web..."
-        curl -s http://localhost:8080 | head -5
-        
-        echo ""
-        echo "3. Ejecutando comando dentro del contenedor desde el host..."
-        docker exec my-container hostname
-        docker exec my-container ifconfig eth0 | grep "inet "
-        
-        echo ""
-        echo "4. Copiando archivo desde contenedor a host..."
-        docker exec my-container cat /etc/alpine-release > alpine-version.txt
-        echo "Versión de Alpine en contenedor: $(cat alpine-version.txt)"
-        
-    - name: Monitorear recursos del contenedor
-      run: |
-        echo "=== MONITOREO DE RECURSOS ==="
-        
-        echo "1. Estadísticas del contenedor:"
-        docker stats my-container --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}\t{{.NetIO}}\t{{.BlockIO}}"
-        
-        echo ""
-        echo "2. Monitoreo detallado (ejecutando dentro del contenedor):"
-        docker exec my-container /app/monitor.sh
-        
-        echo ""
-        echo "3. Uso de CPU del contenedor:"
-        docker stats my-container --no-stream --format "{{.CPUPerc}}"
-        
-        echo ""
-        echo "4. Uso de memoria del contenedor:"
-        docker stats my-container --no-stream --format "{{.MemUsage}}"
-        
-        echo ""
-        echo "5. Información del sistema del contenedor:"
-        docker exec my-container cat /proc/1/status | grep -E "(VmRSS|VmSize|Threads)"
-        
-    - name: Limpieza
-      if: always()
-      run: |
-        echo "Deteniendo y eliminando contenedor..."
-        docker stop my-container 2>/dev/null || true
-        docker rm my-container 2>/dev/null || true
-        
-        echo "Eliminando imagen..."
-        docker rmi simple-app:latest 2>/dev/null || true
+        # Limpiar
+        docker stop test
+        docker rm test
+        docker rmi test-app
