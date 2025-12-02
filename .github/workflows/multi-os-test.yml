@@ -1,203 +1,52 @@
-name: Multi-OS System Tests
+name: Multi-OS Test
 
 on:
-  # Permite ejecución manual desde la interfaz de GitHub Actions
-  workflow_dispatch:
-    inputs:
-      log-level:
-        description: 'Nivel de log'
-        required: true
-        default: 'INFO'
-        type: choice
-        options:
-        - DEBUG
-        - INFO
-        - WARNING
-      tags:
-        description: 'Etiquetas para la ejecución (opcional)'
-        required: false
-        type: string
+  workflow_dispatch:  # Esto habilita el botón de ejecución manual
   push:
-    branches: [ main, master ]
-  pull_request:
     branches: [ main, master ]
 
 jobs:
-  test-on-multiple-os:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        include:
-          - os: ubuntu-latest
-            shell: bash
-            display-name: "Ubuntu Linux"
-          - os: windows-latest
-            shell: pwsh
-            display-name: "Windows"
-          - os: macos-latest
-            shell: bash
-            display-name: "macOS"
-    
-    name: Test on ${{ matrix.display-name }}
+  test-ubuntu:
+    runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout repository
+    - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Mostrar información de la ejecución manual
-      if: ${{ github.event_name == 'workflow_dispatch' }}
+    - name: Print info
       run: |
-        echo "🚀 Ejecución manual iniciada"
-        echo "Nivel de log: ${{ github.event.inputs.log-level }}"
-        echo "Etiquetas: ${{ github.event.inputs.tags || 'Ninguna' }}"
+        echo "🚀 Workflow ejecutado manualmente!"
         echo "Usuario: ${{ github.actor }}"
-      shell: ${{ matrix.shell }}
-    
-    - name: Mostrar información del sistema operativo
-      run: |
-        echo "=========================================="
-        echo "INFORMACIÓN DEL SISTEMA"
-        echo "=========================================="
-        echo "Sistema Operativo: ${{ matrix.display-name }}"
-        echo "Runner OS: ${{ runner.os }}"
-        echo "Versión del workflow: ${{ github.workflow }}"
-        echo "Ejecutado por: ${{ github.actor }}"
-        echo "Commit: ${{ github.sha }}"
-        echo "=========================================="
-      shell: ${{ matrix.shell }}
-    
-    - name: Detectar arquitectura del sistema
-      run: |
-        echo "🔍 DETECTANDO ARQUITECTURA"
-        echo "Arquitectura: ${{ runner.arch }}"
-        if [ "${{ runner.os }}" = "Linux" ] || [ "${{ runner.os }}" = "macOS" ]; then
-          echo "Comando uname -m: $(uname -m)"
-          echo "Comando arch: $(arch)"
-        else
-          echo "Comando powershell: $([Environment]::Is64BitOperatingSystem ? 'x64' : 'x86')"
-        fi
-      shell: ${{ matrix.shell }}
-    
-    - name: Mostrar variables de entorno del runner
-      run: |
-        echo "=========================================="
-        echo "VARIABLES DE ENTORNO DEL RUNNER"
-        echo "=========================================="
-        echo "Workspace: ${{ runner.workspace }}"
-        echo "Tool cache: ${{ runner.tool_cache }}"
-        echo "Temp: ${{ runner.temp }}"
-        echo "=========================================="
+        echo "OS: Ubuntu"
+        echo "Fecha: $(date)"
         
-        echo "📋 VARIABLES DE GITHUB CONTEXT"
-        echo "Repositorio: ${{ github.repository }}"
-        echo "Ref: ${{ github.ref }}"
-        echo "Evento: ${{ github.event_name }}"
-        echo "=========================================="
-      shell: ${{ matrix.shell }}
+  test-windows:
+    runs-on: windows-latest
+    needs: test-ubuntu
     
-    - name: Comandos específicos para cada sistema
-      run: |
-        echo "=========================================="
-        echo "COMANDOS ESPECÍFICOS POR SISTEMA"
-        echo "=========================================="
-        
-        if [ "${{ runner.os }}" = "Linux" ]; then
-          echo "🎯 COMANDOS LINUX (Ubuntu)"
-          echo "Distribución:"
-          lsb_release -a 2>/dev/null || cat /etc/os-release
-          echo ""
-          echo "Información del kernel:"
-          uname -a
-          echo ""
-          echo "Espacio en disco:"
-          df -h
-          echo ""
-          echo "Procesos en ejecución (top 5 por CPU):"
-          ps aux --sort=-%cpu | head -6
-          
-        elif [ "${{ runner.os }}" = "macOS" ]; then
-          echo "🍎 COMANDOS macOS"
-          echo "Versión del sistema:"
-          sw_vers
-          echo ""
-          echo "Información del sistema:"
-          system_profiler SPSoftwareDataType SPHardwareDataType | head -30
-          echo ""
-          echo "Arquitectura:"
-          uname -m
-          echo ""
-          echo "Espacio en disco:"
-          df -h
-          
-        elif [ "${{ runner.os }}" = "Windows" ]; then
-          echo "🪟 COMANDOS WINDOWS"
-          echo "Información del sistema:"
-          systeminfo | Select-String -Pattern "OS Name","OS Version","System Type" -CaseSensitive:$false
-          echo ""
-          echo "Directorio actual:"
-          Get-Location
-          echo ""
-          echo "Variables de entorno PATH:"
-          $env:PATH -split ';' | Select-Object -First 10
-          echo ""
-          echo "Procesos en ejecución (top 5):"
-          Get-Process | Sort-Object CPU -Descending | Select-Object -First 5 ProcessName,CPU,WorkingSet
-        fi
-        
-        echo "=========================================="
-      shell: ${{ matrix.shell }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
     
-    - name: Comandos comunes para todos los sistemas
+    - name: Print info
       run: |
-        echo "=========================================="
-        echo "COMANDOS COMUNES (ejecutados en todos los sistemas)"
-        echo "=========================================="
-        echo "Fecha y hora actual: $(date)"
-        echo "Directorio de trabajo: $(pwd)"
-        echo "Usuario del runner: $(whoami)"
-        echo "Memoria disponible:"
+        echo "🚀 Workflow ejecutado manualmente!"
+        echo "Usuario: ${{ github.actor }}"
+        echo "OS: Windows"
+        Write-Output "Fecha: $(Get-Date)"
+      shell: pwsh
         
-        if [ "${{ runner.os }}" = "Linux" ]; then
-          free -h || echo "Comando free no disponible"
-        elif [ "${{ runner.os }}" = "macOS" ]; then
-          vm_stat 2>/dev/null || top -l 1 -s 0 | grep PhysMem
-        else
-          Get-CimInstance -ClassName Win32_OperatingSystem | Select-Object TotalVisibleMemorySize,FreePhysicalMemory
-        fi
-      shell: ${{ matrix.shell }}
+  test-macos:
+    runs-on: macos-latest
+    needs: test-ubuntu
     
-    - name: Verificar herramientas disponibles
-      run: |
-        echo "=========================================="
-        echo "HERRAMIENTAS DISPONIBLES"
-        echo "=========================================="
-        
-        # Herramientas comunes
-        echo "Git version:"
-        git --version 2>/dev/null || echo "Git no encontrado"
-        
-        echo ""
-        echo "Versión de shell:"
-        if [ "${{ runner.os }}" = "Windows" ]; then
-          $PSVersionTable.PSVersion
-        else
-          echo "Bash: $BASH_VERSION"
-        fi
-        
-        # Herramientas específicas
-        if [ "${{ runner.os }}" = "Linux" ]; then
-          echo ""
-          echo "Gestor de paquetes APT disponible: $(which apt-get 2>/dev/null && echo 'Sí' || echo 'No')"
-        fi
-      shell: ${{ matrix.shell }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
     
-    - name: Finalizar con mensaje personalizado
+    - name: Print info
       run: |
-        echo ""
-        echo "PRUEBAS COMPLETADAS EXITOSAMENTE"
-        echo "Sistema: ${{ matrix.display-name }}"
-        echo "Estado: Completado"
-        echo "Hora de finalización: $(date)"
-        echo "=========================================="
-      shell: ${{ matrix.shell }}
+        echo "🚀 Workflow ejecutado manualmente!"
+        echo "Usuario: ${{ github.actor }}"
+        echo "OS: macOS"
+        echo "Fecha: $(date)"
