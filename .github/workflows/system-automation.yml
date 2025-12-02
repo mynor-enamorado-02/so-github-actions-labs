@@ -1,0 +1,88 @@
+name: System Automation Workflow
+
+on:
+  workflow_dispatch:  # Ejecución manual
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  OUTPUT_DIR: "automation-output"
+  LOG_FILE: "automation.log"
+
+jobs:
+  linux-automation:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Configurar variables de entorno
+      run: |
+        echo "JOB_ID=${{ github.run_id }}" >> $GITHUB_ENV
+        echo "RUNNER_OS=${{ runner.os }}" >> $GITHUB_ENV
+        echo "TIMESTAMP=$(date +%Y%m%d_%H%M%S)" >> $GITHUB_ENV
+    
+    - name: Ejecutar script de automatización (Linux)
+      env:
+        API_TOKEN: ${{ secrets.API_TOKEN }}
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      run: |
+        chmod +x ./scripts/automation.sh
+        ./scripts/automation.sh
+        
+    - name: Subir artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: linux-output-${{ env.TIMESTAMP }}
+        path: |
+          ${{ env.OUTPUT_DIR }}/
+          ${{ env.LOG_FILE }}
+        retention-days: 7
+
+  windows-automation:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v4
+    
+    - name: Configurar variables
+      run: |
+        echo "JOB_ID=${{ github.run_id }}" | Out-File -FilePath $env:GITHUB_ENV -Append
+        echo "RUNNER_OS=${{ runner.os }}" | Out-File -FilePath $env:GITHUB_ENV -Append
+        echo "TIMESTAMP=$(Get-Date -Format 'yyyyMMdd_HHmmss')" | Out-File -FilePath $env:GITHUB_ENV -Append
+    
+    - name: Ejecutar script PowerShell
+      env:
+        API_TOKEN: ${{ secrets.API_TOKEN }}
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      run: |
+        .\scripts\automation.ps1
+        
+    - name: Subir artifacts Windows
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: windows-output-${{ env.TIMESTAMP }}
+        path: |
+          ${{ env.OUTPUT_DIR }}/
+          ${{ env.LOG_FILE }}
+        retention-days: 7
+
+  notify:
+    needs: [linux-automation, windows-automation]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Notificar resultado
+      run: |
+        echo "Workflow completado"
+        echo "Linux job: ${{ needs.linux-automation.result }}"
+        echo "Windows job: ${{ needs.windows-automation.result }}"
