@@ -1,6 +1,6 @@
 # Aplicación SO CI/CD con Flask
 
-Esta es una aplicación web simple creada con Flask para demostrar prácticas de CI/CD, desplegada en Render.
+Esta es una aplicación web simple creada con Flask Python
 
 ## Características
 
