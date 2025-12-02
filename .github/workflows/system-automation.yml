@@ -1,4 +1,4 @@
-name: System Automation Workflow - Fixed
+name: System Automation Workflow
 
 on:
   workflow_dispatch:
