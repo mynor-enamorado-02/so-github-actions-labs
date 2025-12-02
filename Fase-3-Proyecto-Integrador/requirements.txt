@@ -1,1 +1,2 @@
-
+# Dependencias principales
+python>=3.8
