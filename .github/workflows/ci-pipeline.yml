@@ -1,0 +1,69 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # ESTE JOB APARECERÁ COMO "Test Matrix" EN LA INTERFAZ
+  test-matrix:
+    name: Test Matrix - ${{ matrix.os }} Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        cd "Fase-3-Proyecto-Integrador"
+        python -m pip install --upgrade pip
+        if [ -f "requirements-dev.txt" ]; then
+          pip install -r requirements-dev.txt
+        else
+          pip install pytest
+        fi
+    
+    - name: Run tests
+      run: |
+        cd "Fase-3-Proyecto-Integrador"
+        python -m pytest tests/ -v
+        
+  build-package:
+    name: Build Package
+    runs-on: ubuntu-latest
+    needs: test-matrix
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Build
+      run: |
+        cd "Fase-3-Proyecto-Integrador"
+        echo "📦 Building package..."
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts
+        path: Fase-3-Proyecto-Integrador/
