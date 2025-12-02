@@ -22,5 +22,5 @@ Esta es una aplicación web simple creada con Flask Python
 
 1. Clonar el repositorio:
 ```bash
-git clone <tu-repositorio>
+git clone <https://github.com/mynor-enamorado-02/so-github-actions-labs.git>
 cd so-cicd-app-flask
