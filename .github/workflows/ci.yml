@@ -1,7 +1,6 @@
 name: CI
 
-on:
-  workflow_dispatch:
+on: workflow_dispatch
 
 jobs:
   test:
@@ -13,5 +12,5 @@ jobs:
         with:
           node-version: '20'
       
-      - run: npm ci
+      - run: npm install 
       - run: npm test
