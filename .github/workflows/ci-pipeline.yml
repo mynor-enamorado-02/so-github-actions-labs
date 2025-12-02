@@ -11,6 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ['3.8', '3.9', '3.10', '3.11']
@@ -57,6 +58,11 @@ jobs:
         python -m flake8 src --count --select=E9,F63,F7,F82 --show-source --statistics
         python -m flake8 src --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     
+    - name: Create test results directory
+      run: |
+        cd "Fase 3 Proyecto Integrador"
+        mkdir -p junit
+    
     - name: Run tests with coverage
       run: |
         cd "Fase 3 Proyecto Integrador"
@@ -64,16 +70,18 @@ jobs:
     
     - name: Upload test results
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: test-results-${{ runner.os }}-${{ matrix.python-version }}
         path: Fase 3 Proyecto Integrador/junit/test-results-${{ runner.os }}-${{ matrix.python-version }}.xml
+        retention-days: 7
     
     - name: Upload coverage report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coverage-${{ runner.os }}-${{ matrix.python-version }}
         path: Fase 3 Proyecto Integrador/htmlcov/
+        retention-days: 7
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
@@ -117,7 +125,8 @@ jobs:
         python -m build
     
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: dist-package
         path: Fase 3 Proyecto Integrador/dist/
+        retention-days: 7
