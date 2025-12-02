@@ -1,7 +1,6 @@
-name: Docker Container Workflow Rápido
+name: Docker Workflow 
 
-on:
-  workflow_dispatch:
+on: workflow_dispatch
 
 jobs:
   docker-test:
@@ -11,16 +10,20 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
       
-    - name: Crear Dockerfile
+    - name: Construir y ejecutar
       run: |
+        # 1. Crear Dockerfile CORREGIDO
         cat > Dockerfile << 'EOF'
         FROM busybox:latest
         
-        # Crear aplicación simple sin instalar nada
+        #Crear el directorio /app
+        RUN mkdir -p /app
+        
+        # Luego crear el script
         RUN echo '#!/bin/sh' > /app/start.sh && \
             echo 'echo "Server starting on port 8080..."' >> /app/start.sh && \
             echo 'while true; do' >> /app/start.sh && \
-            echo '  echo -e "HTTP/1.1 200 OK\\n\\nOK from container at $(date)" | nc -l -p 8080' >> /app/start.sh && \
+            echo '  echo -e "HTTP/1.1 200 OK\\n\\nOK from container at \$(date)" | nc -l -p 8080' >> /app/start.sh && \
             echo 'done' >> /app/start.sh && \
             chmod +x /app/start.sh
         
@@ -29,24 +32,35 @@ jobs:
         CMD ["./start.sh"]
         EOF
         
-    - name: Construir y ejecutar
-      run: |
-        # Construir
+        # 2. Mostrar Dockerfile
+        echo "=== DOCKERFILE ==="
+        cat Dockerfile
+        
+        # 3. Construir
+        echo "=== CONSTRUYENDO ==="
         docker build -t test-app .
         
-        # Ejecutar
+        # 4. Ejecutar
+        echo "=== EJECUTANDO ==="
         docker run -d --name test -p 8080:8080 test-app
-        sleep 2
         
-        # Probar comunicación
-        echo "Probando conexión..."
-        timeout 5s bash -c 'until curl -s http://localhost:8080; do sleep 1; done' || true
+        # 5. Esperar y probar
+        echo "=== ESPERANDO 3s ==="
+        sleep 3
         
-        # Monitorear
-        echo "Estadísticas:"
+        echo "=== PROBANDO CONEXIÓN ==="
+        curl -s --max-time 5 http://localhost:8080 || echo "Curl falló, revisando logs..."
+        
+        # 6. Ver logs
+        echo "=== LOGS DEL CONTENEDOR ==="
+        docker logs test
+        
+        # 7. Monitorear
+        echo "=== ESTADÍSTICAS ==="
         docker stats test --no-stream
         
-        # Limpiar
+        # 8. Limpiar
+        echo "=== LIMPIANDO ==="
         docker stop test
         docker rm test
         docker rmi test-app
