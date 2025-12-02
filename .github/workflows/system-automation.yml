@@ -1,4 +1,4 @@
-name: System Automation Workflow
+name: System Automation Workflow 
 
 on:
   workflow_dispatch:
@@ -28,20 +28,16 @@ jobs:
         API_TOKEN: ${{ secrets.API_TOKEN || 'test-token-123' }}
         DB_PASSWORD: ${{ secrets.DB_PASSWORD || 'test-pass-456' }}
       run: |
-        # Crear directorio de salida
         mkdir -p "$OUTPUT_DIR"
         
-        # 1. Leer/escribir archivos
         echo "=== Linux Automation ===" > "$OUTPUT_DIR/linux_results.txt"
         echo "Timestamp: $(date)" >> "$OUTPUT_DIR/linux_results.txt"
         echo "Job ID: $JOB_ID" >> "$OUTPUT_DIR/linux_results.txt"
         
-        # Listar archivos del repositorio
         echo "" >> "$OUTPUT_DIR/linux_results.txt"
         echo "Repository contents:" >> "$OUTPUT_DIR/linux_results.txt"
         ls -la >> "$OUTPUT_DIR/linux_results.txt"
         
-        # 2. Gestionar permisos
         echo "Creating files with different permissions..." >> "$OUTPUT_DIR/linux_results.txt"
         echo "Readable file" > "$OUTPUT_DIR/readable.txt"
         chmod 644 "$OUTPUT_DIR/readable.txt"
@@ -49,20 +45,17 @@ jobs:
         echo "Executable script" > "$OUTPUT_DIR/script.sh"
         chmod +x "$OUTPUT_DIR/script.sh"
         
-        # 3. Proceso en segundo plano
         echo "Starting background process..." >> "$OUTPUT_DIR/linux_results.txt"
         (sleep 3; echo "Background process completed at $(date)" > "$OUTPUT_DIR/background_done.txt") &
         BG_PID=$!
         echo "Background process PID: $BG_PID" >> "$OUTPUT_DIR/linux_results.txt"
         
-        # 4. Usar variables de entorno
         echo "" >> "$OUTPUT_DIR/linux_results.txt"
         echo "Environment variables:" >> "$OUTPUT_DIR/linux_results.txt"
         echo "API_TOKEN length: ${#API_TOKEN}" >> "$OUTPUT_DIR/linux_results.txt"
         echo "DB_PASSWORD length: ${#DB_PASSWORD}" >> "$OUTPUT_DIR/linux_results.txt"
         echo "RUNNER_OS: $RUNNER_OS" >> "$OUTPUT_DIR/linux_results.txt"
         
-        # 5. Generar JSON result
         cat > "$OUTPUT_DIR/summary.json" << EOF
         {
           "status": "success",
@@ -74,12 +67,8 @@ jobs:
         }
         EOF
         
-        # Esperar proceso background
         wait $BG_PID
-        
         echo "✅ Linux automation completed successfully"
-        
-        # Crear log
         echo "Workflow log - Linux" > "$LOG_FILE"
         echo "Completed at: $(date)" >> "$LOG_FILE"
     
@@ -90,7 +79,6 @@ jobs:
         path: |
           automation-output/
           automation.log
-        retention-days: 7
 
   windows-automation:
     runs-on: windows-latest
@@ -110,18 +98,13 @@ jobs:
         API_TOKEN: ${{ secrets.API_TOKEN || 'test-token-123' }}
         DB_PASSWORD: ${{ secrets.DB_PASSWORD || 'test-pass-456' }}
       run: |
-        # Crear directorio de salida
         if (!(Test-Path "$env:OUTPUT_DIR")) {
             New-Item -ItemType Directory -Path "$env:OUTPUT_DIR" -Force | Out-Null
         }
         
-        # Crear y ejecutar script PowerShell CORRECTO
         $scriptContent = @'
-        # Windows Automation Script - CORRECT SYNTAX
-        
         Write-Host "=== Windows Automation ==="
         
-        # 1. Leer/escribir archivos
         $output = @"
         === Windows Automation ===
         Timestamp: $(Get-Date)
@@ -130,17 +113,13 @@ jobs:
         Repository contents:
         "@
         
-        # Get repository contents
         $files = Get-ChildItem -Path . -Recurse -Depth 1 | Select-Object Name, Length, LastWriteTime
         $output += "`r`n" + ($files | Format-Table -AutoSize | Out-String)
-        
         $output | Out-File -FilePath "$env:OUTPUT_DIR\windows_results.txt" -Encoding UTF8
         
-        # 2. Gestionar permisos (simulado en Windows)
         "Test file content" | Out-File -FilePath "$env:OUTPUT_DIR\test_file.txt" -Encoding UTF8
         Write-Host "Created test file"
         
-        # 3. Proceso en segundo plano usando Start-Job
         Write-Host "Starting background job..."
         $job = Start-Job -ScriptBlock {
             Start-Sleep -Seconds 3
@@ -148,7 +127,6 @@ jobs:
         }
         Write-Host "Background job ID: $($job.Id)"
         
-        # 4. Usar variables de entorno
         $envInfo = @"
         
         Environment variables:
@@ -161,7 +139,6 @@ jobs:
         
         $envInfo | Out-File -FilePath "$env:OUTPUT_DIR\windows_results.txt" -Append -Encoding UTF8
         
-        # 5. Generar JSON result
         $jsonContent = @"
         {
           "status": "success",
@@ -175,18 +152,15 @@ jobs:
         
         $jsonContent | Out-File -FilePath "$env:OUTPUT_DIR\summary.json" -Encoding UTF8
         
-        # Esperar trabajo background
         $job | Wait-Job | Out-Null
         $job | Remove-Job -Force
         
         Write-Host "✅ Windows automation completed successfully"
         '@
         
-        # Guardar y ejecutar script
         $scriptContent | Out-File -FilePath "automation.ps1" -Encoding UTF8
         powershell -ExecutionPolicy Bypass -File "automation.ps1"
         
-        # Crear log
         "Workflow log - Windows" | Out-File -FilePath "$env:LOG_FILE" -Encoding UTF8
         "Completed at: $(Get-Date)" | Out-File -FilePath "$env:LOG_FILE" -Append -Encoding UTF8
     
@@ -197,11 +171,11 @@ jobs:
         path: |
           automation-output/
           automation.log
-        retention-days: 7
 
   summary:
     runs-on: ubuntu-latest
     needs: [linux-automation, windows-automation]
+    if: always()
     
     steps:
     - name: Display workflow results
@@ -215,12 +189,10 @@ jobs:
         echo "- Linux: ${{ needs.linux-automation.result }}"
         echo "- Windows: ${{ needs.windows-automation.result }}"
         echo ""
-        
-        if [[ "${{ needs.linux-automation.result }}" == "success" ]] && [[ "${{ needs.windows-automation.result }}" == "success" ]]; then
-          echo "🎉 ALL JOBS COMPLETED SUCCESSFULLY!"
+        if [ "${{ needs.linux-automation.result }}" = "success" ] && [ "${{ needs.windows-automation.result }}" = "success" ]; then
+          echo "ALL JOBS COMPLETED SUCCESSFULLY!"
           echo "Artifacts are available for download."
         else
-          echo "⚠️  Some jobs had issues"
+          echo "Some jobs had issues"
           echo "Check the logs for details"
-        fi
         fi
