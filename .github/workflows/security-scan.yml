@@ -24,7 +24,7 @@ jobs:
     - name: Install security tools
       run: |
         python -m pip install --upgrade pip
-        pip install bandit safety
+        pip install bandit safety pip-audit
     
     - name: Bandit - Security scanning
       run: |
@@ -61,12 +61,13 @@ jobs:
     
     - name: Upload security reports
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: security-reports
         path: |
           Fase 3 Proyecto Integrador/bandit-report.json
           Fase 3 Proyecto Integrador/safety-report.json
+        retention-days: 30
     
     - name: Dependency review
       uses: actions/dependency-review-action@v3
@@ -75,7 +76,15 @@ jobs:
       run: |
         echo "Checking for known vulnerabilities..."
         cd "Fase 3 Proyecto Integrador"
-        pip-audit --requirement requirements.txt --requirement requirements-dev.txt || echo "pip-audit completed"
+        pip-audit --requirement requirements.txt --requirement requirements-dev.txt --format json --output pip-audit-report.json || echo "pip-audit completed"
+    
+    - name: Upload pip-audit report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: pip-audit-report
+        path: Fase 3 Proyecto Integrador/pip-audit-report.json
+        retention-days: 30
 
   container-scan:
     name: Container Security Scan
@@ -103,3 +112,11 @@ jobs:
       if: always()
       with:
         sarif_file: 'trivy-results.sarif'
+    
+    - name: Upload Docker image
+      uses: actions/upload-artifact@v4
+      with:
+        name: docker-image-info
+        path: |
+          Fase 3 Proyecto Integrador/Dockerfile
+        retention-days: 30
