@@ -10,80 +10,256 @@
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
-            background-color: #f5f5f5;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
         }
         .container {
             background: white;
             padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-top: 20px;
         }
         h1 {
-            color: #333;
-            border-bottom: 2px solid #4CAF50;
-            padding-bottom: 10px;
+            color: #2c3e50;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        h1:before {
+            content: "🚀";
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 25px;
+            padding-left: 10px;
+            border-left: 4px solid #3498db;
+        }
+        h3 {
+            color: #2c3e50;
+            margin-top: 20px;
+        }
+        .info-card {
+            background: #f8f9fa;
+            border-left: 4px solid #4CAF50;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
         }
         .endpoints {
-            background: #f9f9f9;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 20px 0;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 25px 0;
+            border: 1px solid #ddd;
         }
         code {
-            background: #e8e8e8;
-            padding: 2px 5px;
-            border-radius: 3px;
-            font-family: monospace;
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            display: inline-block;
+            margin: 2px 0;
         }
         .btn {
             display: inline-block;
-            background: #4CAF50;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
             color: white;
-            padding: 10px 15px;
+            padding: 12px 25px;
             text-decoration: none;
-            border-radius: 5px;
-            margin: 5px;
-            transition: background 0.3s;
+            border-radius: 8px;
+            margin: 8px 5px;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         .btn:hover {
-            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
         }
         .btn-info {
-            background: #2196F3;
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
         }
         .btn-info:hover {
-            background: #0b7dda;
+            background: linear-gradient(135deg, #1976D2 0%, #1565C0 100%);
+        }
+        .btn-test {
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+        }
+        .btn-test:hover {
+            background: linear-gradient(135deg, #8e44ad 0%, #7d3c98 100%);
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .badge-success {
+            background: #2ecc71;
+            color: white;
+        }
+        .badge-info {
+            background: #3498db;
+            color: white;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin: 8px 0;
+            line-height: 1.6;
+        }
+        .test-box {
+            background: #e8f4fc;
+            border: 2px dashed #3498db;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .environment-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .env-card {
+            background: #f1f8e9;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #c5e1a5;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            background: #2ecc71;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🚀 Aplicación SO CI/CD con Flask</h1>
-        <p>Esta es una aplicación de ejemplo para demostrar CI/CD con Flask y Render.</p>
+        <h1>Aplicación SO CI/CD con Flask <span class="badge badge-success">EN VIVO</span></h1>
+        <p><span class="status-indicator"></span> Esta es una aplicación de ejemplo para demostrar CI/CD con Flask y Render.</p>
         
-        <h2>📊 Información de la Aplicación</h2>
-        <ul>
-            <li><strong>Framework:</strong> Flask (Python)</li>
-            <li><strong>Entorno:</strong> <code>{{ env }}</code></li>
-            <li><strong>Versión:</strong> <code>{{ version }}</code></li>
-        </ul>
+        <div class="environment-info">
+            <div class="env-card">
+                <h3>📊 Información de la Aplicación</h3>
+                <ul>
+                    <li><strong>Framework:</strong> Flask (Python)</li>
+                    <li><strong>Entorno:</strong> <code>{{ env }}</code></li>
+                    <li><strong>Versión:</strong> <code>{{ version }}</code></li>
+                    <li><strong>Estado:</strong> <span style="color: #2ecc71;">● Activo</span></li>
+                </ul>
+            </div>
+        </div>
         
         <div class="endpoints">
             <h3>🔗 Endpoints Disponibles:</h3>
             <ul>
-                <li><code>GET /</code> - Esta página</li>
-                <li><code>GET /info</code> - Información del sistema y variables de entorno</li>
-                <li><code>GET /health</code> - Verificación de salud del servicio</li>
+                <li><code>GET /</code> - Esta página (HTML)</li>
+                <li><code>GET /info</code> - Información del sistema en JSON (variables de entorno)</li>
+                <li><code>GET /health</code> - Verificación de salud del servicio (JSON)</li>
             </ul>
         </div>
         
         <h3>🔍 Prueba los Endpoints:</h3>
-        <a href="/info" class="btn btn-info">Ver Información del Sistema</a>
-        <a href="/health" class="btn">Verificar Salud</a>
+        <div style="margin: 20px 0;">
+            <a href="/info" class="btn btn-info">📊 Ver Información del Sistema</a>
+            <a href="/health" class="btn">❤️ Verificar Salud</a>
+            <a href="https://render.com" target="_blank" class="btn btn-test">🚀 Ir a Render</a>
+        </div>
         
-        <h3>🧪 Tests Unitarios:</h3>
-        <p>Para ejecutar los tests localmente:</p>
-        <code>pytest tests/</code>
+        <div class="test-box">
+            <h3>🧪 Tests Unitarios:</h3>
+            <p>Para ejecutar los tests localmente, abre una terminal y ejecuta:</p>
+            <code style="display: block; padding: 15px; margin: 10px 0; font-size: 1.1em;">
+                $ pytest tests/
+            </code>
+            <p>O con verbosidad:</p>
+            <code style="display: block; padding: 15px; margin: 10px 0; font-size: 1.1em;">
+                $ pytest tests/ -v
+            </code>
+            
+            <h4>Variables de entorno mostradas:</h4>
+            <ul>
+                <li><code>FLASK_ENV</code> - Entorno de Flask (development/production)</li>
+                <li><code>NODE_ENV</code> - Entorno Node.js (para compatibilidad)</li>
+                <li><code>VERSION</code> - Versión de la aplicación</li>
+                <li><code>RENDER</code> - Indica si está en Render</li>
+            </ul>
+        </div>
+        
+        <div class="footer">
+            <p>✅ Cumple con todos los requisitos del proyecto SO CI/CD</p>
+            <p>📁 <a href="https://github.com/" style="color: #3498db;">Repositorio en GitHub</a> | 🚀 <a href="https://render.com" style="color: #3498db;">Desplegado en Render</a></p>
+            <p style="font-size: 0.8em; margin-top: 10px;">Python + Flask | Tests con Pytest | CI/CD Automático</p>
+        </div>
     </div>
+    
+    <script>
+        // Pequeño script para mejorar la interactividad
+        document.addEventListener('DOMContentLoaded', function() {
+            // Actualizar hora cada segundo
+            function updateTime() {
+                const now = new Date();
+                const timeElements = document.querySelectorAll('.current-time');
+                timeElements.forEach(el => {
+                    el.textContent = now.toLocaleTimeString();
+                });
+            }
+            
+            // Agregar hora actual al título
+            const title = document.querySelector('h1');
+            const timeSpan = document.createElement('span');
+            timeSpan.className = 'current-time';
+            timeSpan.style.fontSize = '0.6em';
+            timeSpan.style.marginLeft = '15px';
+            timeSpan.style.color = '#7f8c8d';
+            title.appendChild(timeSpan);
+            
+            updateTime();
+            setInterval(updateTime, 1000);
+            
+            // Efecto al hacer clic en botones
+            const buttons = document.querySelectorAll('.btn');
+            buttons.forEach(button => {
+                button.addEventListener('click', function() {
+                    this.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        this.style.transform = '';
+                    }, 150);
+                });
+            });
+        });
+    </script>
 </body>
 </html>
