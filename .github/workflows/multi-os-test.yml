@@ -65,16 +65,6 @@ jobs:
         echo ""
         echo "4. Paquetes instalados (ejemplo):"
         dpkg -l | grep -E "git|curl|wget" | head -5
-    
-    - name: Verificar herramientas comunes
-      run: |
-        echo "🔧 HERRAMIENTAS DISPONIBLES"
-        echo "============================"
-        echo "Git: $(git --version 2>/dev/null || echo 'No instalado')"
-        echo "Bash: $BASH_VERSION"
-        echo "Python: $(python3 --version 2>/dev/null || echo 'No instalado')"
-        echo "Node: $(node --version 2>/dev/null || echo 'No instalado')"
-        echo "Docker: $(docker --version 2>/dev/null || echo 'No instalado')"
 
   windows-test:
     runs-on: windows-latest
@@ -126,19 +116,6 @@ jobs:
         Write-Host ""
         Write-Host "4. Información de red:"
         Get-NetIPConfiguration | Select-Object InterfaceAlias,IPv4Address
-    
-    - name: Verificar herramientas comunes Windows
-      run: |
-        Write-Host "🔧 HERRAMIENTAS DISPONIBLES" -ForegroundColor Magenta
-        Write-Host "============================" -ForegroundColor Magenta
-        Write-Host "PowerShell versión: $($PSVersionTable.PSVersion)"
-        Write-Host "Git: $(git --version 2>$null)"
-        Write-Host "Python: $(python --version 2>$null)"
-        if (Get-Command node -ErrorAction SilentlyContinue) {
-          Write-Host "Node: $(node --version)"
-        } else {
-          Write-Host "Node: No instalado"
-        }
 
   macos-test:
     runs-on: macos-latest
@@ -191,18 +168,6 @@ jobs:
         echo ""
         echo "4. Información de red:"
         networksetup -listallhardwareports | head -10
-    
-    - name: Verificar herramientas comunes macOS
-      run: |
-        echo "🔧 HERRAMIENTAS DISPONIBLES"
-        echo "============================"
-        echo "Git: $(git --version 2>/dev/null || echo 'No instalado')"
-        echo "Bash: $BASH_VERSION"
-        echo "Zsh: $(zsh --version 2>/dev/null || echo 'No instalado')"
-        echo "Python3: $(python3 --version 2>/dev/null || echo 'No instalado')"
-        echo "Homebrew: $(brew --version 2>/dev/null | head -1 || echo 'No instalado')"
-        echo "Xcode Command Line Tools:"
-        xcode-select -p 2>/dev/null && echo "Instalado" || echo "No instalado"
 
   resultados:
     runs-on: ubuntu-latest
@@ -224,9 +189,6 @@ jobs:
         echo "  • ✅ macOS (macos-latest)"
         echo ""
         echo "Modo de ejecución: ${{ github.event_name }}"
-        if: ${{ github.event_name == 'workflow_dispatch' }}
-        echo "Modo de prueba: ${{ github.event.inputs.test-mode }}"
-        endif
         echo ""
         echo "Hora de finalización: $(date)"
         echo "=========================================="
